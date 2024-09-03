@@ -5,16 +5,30 @@ import { useNavigate } from 'react-router-dom';
 const AuthForm = ({ isLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate(); // Hook to programmatically navigate
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const url = isLogin ? 'http://localhost:3000/login' : 'http://localhost:3000/register';
       const response = await axios.post(url, { email, password });
-      console.log(response.data);
-      // Redirect to home page or any other page on successful login/registration
-      navigate('/');
+      
+      if (response.status === 200) {
+        if (isLogin) {
+          const { userId } = response.data; // Get userId from response
+          if (userId) {
+            localStorage.setItem('userId', userId); // Save userId to localStorage
+            navigate(`/profile/${userId}`); // Redirect to profile page
+          } else {
+            console.error('User ID not received in response');
+          }
+        } else {
+          alert(response.data.message); // Show registration success message
+          navigate('/'); // Redirect to home after registration
+        }
+      } else {
+        console.error(response.data.message);
+      }
     } catch (error) {
       console.error('There was an error submitting the form!', error);
     }
