@@ -6,3 +6,7 @@ Goal: To have a full stack program that has a login function, tracker, and a lit
 Frontend: React + Vite + Bootstrap
 Backend: Node + Express
 Database: SQL / Postgres
+
+Goals:
+1. Need to add a basic data visualizer and then add user authentification need to look into that.
+2. Optional Rn: need to clean up visuals or use more bootstrap because it's faster

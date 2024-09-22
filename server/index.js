@@ -1,9 +1,10 @@
 import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
+import cors from 'cors'; //you need this if back and front end are on different domains 
+//example this is backend set to port 3000 and front end is 5000
+import bodyParser from 'body-parser'; //you can use native express but I like to user body-parser
+import pkg from 'pg'; //This is the package for Postgres SQL
 import dotenv from 'dotenv';
-import pkg from 'pg';
-const { Pool } = pkg;
+const { Pool } = pkg; //this is the deconstrucuter do not fully understand yet?
 
 // Load environment variables
 dotenv.config();
@@ -12,32 +13,34 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Set up CORS and body-parser middleware
-app.use(cors());
+app.use(cors({origin: 'http://localhost:5173',}));
 app.use(bodyParser.json());
 
-// PostgreSQL pool configuration
+// PostgreSQL pool configuration and they are set up to defaults
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'fitness_tracker',
-  password: 'Vem123', // Make sure this matches your PostgreSQL password
+  password: 'Vem123', // Postgres Pasword
   port: 5432,
 });
 
 // Registration route
-app.post('/register', async (req, res) => {
-  const { email, password } = req.body;
+app.post('/register', async (req, res) => { //this is a call back with a req from end and res from the backend
+  const { email, password } = req.body; //this grabs email and password from the request body from the front end
   try {
-    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    // Check if the user already exists in the database.
+    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]); //using postgres code
 
     if (existingUser.rows.length > 0) {
-      return res.status(409).json({ message: 'Email already exists' });
+      return res.status(409).json({ message: 'Email already exists' }); //need to restudy status codes and remember have the message 
     }
 
-    await pool.query('INSERT INTO users (email, password) VALUES ($1, $2)', [email, password]);
-    res.status(201).json({ message: 'User registered successfully' });
+    //this adds a new user into the database
+    await pool.query('INSERT INTO users (email, password) VALUES ($1, $2)', [email, password]); //using postgres code
+    res.status(201).json({ message: 'User registered successfully' }); 
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Error registering user:', error); 
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -67,40 +70,45 @@ app.post('/login', async (req, res) => {
 
 // User profile page
 app.get('/user/:id', async (req, res) => {
-  const userId = req.params.id;
+  const userId = req.params.id; //Get the user ID from the URL
 
   try {
+    // Query the database for the User with the ID
     const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
 
-    if (result.rows.length > 0) {
+    if (result.rows.length > 0) { //reponse when user is found
       res.json(result.rows[0]);
     } else {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: 'User not found' }); //this is to handle if user is not found
     }
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching user data' });
+    res.status(500).json({ message: 'Error fetching user data' }); //any other errors
   }
 });
 
-app.post('/log-workout', async (req, res) => {
-  const { userId, exercise, sets, reps, weight } = req.body;
+
+// Route to log a workout
+app.post('/log-workout', async (req, res) => { 
+  const { userId, exercise, sets, reps, weight } = req.body; 
   
   try {
     await pool.query(
-      'INSERT INTO workouts (user_id, exercise, sets, reps, weight, created_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)',
+      'INSERT INTO workouts (user_id, exercise, sets, reps, weight, timestamp) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)',
       [userId, exercise, sets, reps, weight]
     );
     res.status(201).json({ message: 'Workout logged successfully' });
   } catch (error) {
     console.error('Error logging workout:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
+// Route to get all workouts for a specific user
 app.get('/workouts/:userId', async (req, res) => {
   const userId = req.params.userId;
   try {
-    const result = await pool.query('SELECT * FROM workouts WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    const result = await pool.query('SELECT * FROM workouts WHERE user_id = $1 ORDER BY timestamp DESC', [userId]);
+    console.log(result.rows); // Log the rows being returned
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching workouts:', error);

@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const AuthForm = ({ isLogin }) => {
+const AuthForm = ({ isLogin }) => { //need review states
+  //State hooks to store emails and passwords
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
+  const navigate = useNavigate(); //useNavigate hook to programmatically navigate to different routes
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => { //this is a function to handle form submissions
+    e.preventDefault(); //this just prevents default form submission behavior
     try {
-      const url = isLogin ? 'http://localhost:3000/login' : 'http://localhost:3000/register';
+      const url = isLogin ? 'http://localhost:3000/login' : 'http://localhost:3000/register';  // Determine the API endpoint based on whether the form is for login or registration
       const response = await axios.post(url, { email, password });
       
       if (response.status === 200) {

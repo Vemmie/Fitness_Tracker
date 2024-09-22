@@ -2,17 +2,20 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { Table, Button } from 'react-bootstrap';
+import './ProfilePage.css';
 
 const ProfilePage = () => {
   const { userId } = useParams();
   const [user, setUser] = useState(null);
   const [workouts, setWorkouts] = useState([]);
   const [formData, setFormData] = useState({
-    exerciseName: '',
+    exercise: '',
     reps: '',
     sets: '',
     weight: ''
   });
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,7 +47,7 @@ const ProfilePage = () => {
         userId,
         ...formData
       });
-      setFormData({ exerciseName: '', reps: '', sets: '', weight: '' });
+      setFormData({ exercise: '', reps: '', sets: '', weight: '' });
       const response = await axios.get(`http://localhost:3000/workouts/${userId}`);
       setWorkouts(response.data);
     } catch (error) {
@@ -56,7 +59,6 @@ const ProfilePage = () => {
     try {
       await axios.delete(`http://localhost:3000/user/${userId}`);
       alert('Profile deleted successfully');
-      // Optionally redirect to home page or log out user
     } catch (error) {
       console.error('Error deleting profile:', error);
     }
@@ -68,6 +70,21 @@ const ProfilePage = () => {
       setWorkouts(workouts.filter(workout => workout.id !== logId));
     } catch (error) {
       console.error('Error deleting workout log:', error);
+    }
+  };
+
+  const totalPages = Math.ceil(workouts.length / itemsPerPage);
+  const paginatedWorkouts = workouts.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
     }
   };
 
@@ -83,26 +100,30 @@ const ProfilePage = () => {
             <input
               type="text"
               placeholder="Exercise Name"
-              value={formData.exerciseName}
-              onChange={(e) => setFormData({ ...formData, exerciseName: e.target.value })}
+              value={formData.exercise}
+              onChange={(e) => setFormData({ ...formData, exercise: e.target.value })}
+              required
             />
             <input
               type="number"
               placeholder="Reps"
               value={formData.reps}
               onChange={(e) => setFormData({ ...formData, reps: e.target.value })}
+              required
             />
             <input
               type="number"
               placeholder="Sets"
               value={formData.sets}
               onChange={(e) => setFormData({ ...formData, sets: e.target.value })}
+              required
             />
             <input
               type="number"
               placeholder="Weight"
               value={formData.weight}
               onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+              required
             />
             <button type="submit" className="btn btn-primary">Log Workout</button>
           </form>
@@ -120,10 +141,14 @@ const ProfilePage = () => {
               </tr>
             </thead>
             <tbody>
-              {workouts.map((workout) => (
+              {paginatedWorkouts.map((workout) => (
                 <tr key={workout.id}>
-                  <td>{new Date(workout.created_at).toLocaleDateString()}</td>
-                  <td>{workout.exercise_name}</td>
+                  <td>
+                    {workout.timestamp ? 
+                      new Date(workout.timestamp).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }) : 
+                      'Invalid Time'}
+                  </td>
+                  <td>{workout.exercise}</td>
                   <td>{workout.reps}</td>
                   <td>{workout.sets}</td>
                   <td>{workout.weight}</td>
@@ -133,7 +158,13 @@ const ProfilePage = () => {
                 </tr>
               ))}
             </tbody>
+
           </Table>
+          
+          <div className="pagination">
+            <button onClick={handlePreviousPage}>Previous</button>
+            <button onClick={handleNextPage}>Next</button>
+          </div>
         </div>
       ) : (
         <p>Loading...</p>

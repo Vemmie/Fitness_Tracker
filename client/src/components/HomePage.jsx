@@ -15,7 +15,7 @@ const HomePage = () => {
           <button 
             type="button" 
             className="btn btn-primary btn-lg px-4 gap-3" 
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/login')} //through the use of react-router-dom it lets me route to another page v simple with onCLick of the button.
           >
             Login
           </button>
